@@ -1,0 +1,56 @@
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: incidencias_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - red_frontend
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: incidencias_backend
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: incidencias
+      DB_USER: admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - red_frontend
+      - red_database
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    container_name: incidencias_db
+    environment:
+      POSTGRES_DB: incidencias
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d incidencias"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - red_database
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  red_frontend:
+    driver: bridge
+  red_database:
+    driver: bridge

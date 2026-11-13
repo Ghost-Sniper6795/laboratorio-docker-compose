@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de incidencias</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #101827;
+            color: white;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        main {
+            max-width: 750px;
+            margin: auto;
+        }
+        h1 { color: #60a5fa; }
+        form, .incidencia {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+        .estado { color: #fbbf24; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Gestión de incidencias</h1>
+    <p>Aplicación web desplegada mediante Docker Compose.</p>
+
+    <form id="formulario">
+        <h2>Nueva incidencia</h2>
+        <input id="titulo" placeholder="Título de la incidencia" required>
+        <textarea id="descripcion" placeholder="Descripción"></textarea>
+        <button type="submit">Registrar incidencia</button>
+    </form>
+
+    <h2>Incidencias registradas</h2>
+    <div id="lista">Cargando...</div>
+</main>
+
+<script>
+async function cargarIncidencias() {
+    const lista = document.getElementById("lista");
+
+    try {
+        const respuesta = await fetch("/api/incidencias");
+        if (!respuesta.ok) throw new Error("Error al consultar la API");
+
+        const incidencias = await respuesta.json();
+        lista.replaceChildren();
+
+        if (incidencias.length === 0) {
+            lista.textContent = "Todavía no hay incidencias registradas.";
+            return;
+        }
+
+        incidencias.forEach(item => {
+            const tarjeta = document.createElement("div");
+            tarjeta.className = "incidencia";
+
+            const titulo = document.createElement("h3");
+            titulo.textContent = item.titulo;
+
+            const descripcion = document.createElement("p");
+            descripcion.textContent = item.descripcion || "Sin descripción";
+
+            const estado = document.createElement("p");
+            estado.className = "estado";
+            estado.textContent = "Estado: " + item.estado;
+
+            tarjeta.append(titulo, descripcion, estado);
+            lista.appendChild(tarjeta);
+        });
+    } catch (error) {
+        lista.textContent = "No se pudieron cargar las incidencias.";
+    }
+}
+
+document.getElementById("formulario").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const respuesta = await fetch("/api/incidencias", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            titulo: document.getElementById("titulo").value,
+            descripcion: document.getElementById("descripcion").value
+        })
+    });
+
+    if (respuesta.ok) {
+        event.target.reset();
+        cargarIncidencias();
+    } else {
+        alert("No se pudo registrar la incidencia.");
+    }
+});
+
+cargarIncidencias();
+</script>
+</body>
+</html>
